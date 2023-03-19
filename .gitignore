@@ -1,0 +1,7 @@
+*/__pycache__/*
+.venv/
+.vscode/
+src/tasm/
+tasm_tests/
+*.mem
+*.pyc

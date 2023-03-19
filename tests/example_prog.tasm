@@ -1,0 +1,26 @@
+loadi x, 1 # Registers
+loadi y, 0xff
+loadi w, 8
+loadi rh, 0x08 # make rh rl pair equal 0x0800
+loadi rl, 0x00
+
+loop: #         label, indents are all ignored
+    add y, x;   add x & y and store ret in y
+    copy z, w;  copy w into z, z is now 8
+    sub z, y;   2's complement y and add to z store in z
+    rstorerl y; store y in R pin low address 0x800 + some number
+    jz exit
+    movx rl, z; Swap the two
+    add z, x;
+    movx z, rl; Swap again
+    jc inc    ; Jmp if carry is 1 from last ALU operation
+    jmp skip
+    inc: #      Add 1 to rh if rl + 1 made a carry
+        movx rh, z
+        add z, x
+        movx z, rh
+    skip:
+    jmp loop;   go back
+exit:
+
+hlt;            All good things come to an end
