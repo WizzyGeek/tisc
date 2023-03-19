@@ -72,13 +72,13 @@ ALU opcodes are
 
 - #### jmp
   The `jmp` instruction has the following format
-  `0000010 [offset LSB] [offset MSB]` it is a relative jump with the
+  `00000010 [offset LSB] [offset MSB]` it is a relative jump with the
   address being stored in little endian
 - #### jz
-  The `jz` instruction is written as `0001010 [offset LSB] [offset MSB]`
+  The `jz` instruction is written as `00010010 [offset LSB] [offset MSB]`
   It jumps only if the *last executed ALU* instruction resulted in a zero.
 - #### jc
-  Written as `0010010 [offset LSB] [offset MSB]` It jumps only if the
+  Written as `00100010 [offset LSB] [offset MSB]` It jumps only if the
   *last executed ALU* instruction resulted in a carry/borrow
 - #### hlt
   HALT stops the machine, written as `00001111`
@@ -98,7 +98,7 @@ ALU opcodes are
   copy 2nd register's `yy` value into first register `xx`. Written as
   `01110000`
 - #### movx
-  Swap two register's contents. written as `10xxxyyyy` `xxx`, `yyy` are 2 3bit register codes for 2 registers invluding the result registers
+  Swap two register's contents. written as `10xxxyyy` `xxx`, `yyy` are 2 3bit register codes for 2 registers invluding the result registers
 - #### (r)loadrl
   `rloadrl` or `loadrl` loads the memory pointed to by the rl-rh
   register pair into the specified register. Written as `110xxx0r` `xxx` is the 3 bit register code, `r` is the `r` pin output.
