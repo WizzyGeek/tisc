@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import Literal
+from .devices import Bus
+from .memory_devices import Memory
 
 class ALU:
     def __init__(self, cpu: TeenyCPU):
@@ -132,63 +134,59 @@ class InstructionExecutor:
             self.cpu.probe()
             self.inc_103()
             self.inst = self.fetch_program_byte()
-        self.cpu.simulator_interface("Halted")
+        self.cpu.simulator_interface("\nHalted")
 
 class TeenyCPU: # This simply holds all parts togather, write a similar class
-    # for deeper probing
+    # for deeper probingin
     """A standard TeenyCPU
 
-    This flavor uses the R pin low state to select the rom device
+    Addresses from 0 to ((1 << 16) - 1) are all treated as having code
+    And will be attempt to be read if a negative jump or HLT doesn't stop it
     """
-    def __init__(self, program, program_write: Literal[0, 1, 2, 3] = 1):
-        if not hasattr(program, "__getitem__"): # Uses memory mapped IO btw
-            raise ValueError
+    def __init__(self):
         self.registers = memoryview(bytearray(8)) # may swap this too
-        self.memory = memoryview(bytearray(256 * 256)) # U may swap this
-        self.program_mem = program
+        self.bus = Bus(17) # 16 bits + 1 bit r
+        # self.memory = memoryview(bytearray(256 * 256)) # U may swap this
+        # self.program_mem = program
         self.alu = ALU(self) # and this
-        if not hasattr(program, "__setitem__"):
-            self._program_write = 2
-        else:
-            self._program_write = program_write
         self.inst_executor = InstructionExecutor(self) # I dont see the pont so dont swap this
 
+    def add_default_devices(self):
+        self.memory = Memory(256 * 256, 0, self.bus)
+        self.program_mem = Memory(128 * 256, 256 * 256, self.bus)
+
     def address_and_data_bus(self, select: bool | Literal[0, 1], oct1: int, oct2: int): # 17 bit addressing, basically this is a multiplexor
-        i = (oct2 << 8) | oct1
-        return self.memory[i] if select else self.program_mem[i]
+        i = (oct2 << 8) | oct1 | (select << 16)
+        with self.bus.updated_state(True, -1, i):
+            return self.bus.out & 0xff
 
     def address_and_data_bus_write(self, select: bool | Literal[0, 1], oct1: int, oct2: int, val: int):
-        i = (oct2 << 8) | oct1
-        if select:
-            self.memory[i] = val
-        else:
-            if self._program_write & 0b01:
-                self.simulator_interface("Access Violation, attempt to write to program memory. Strict mode =", self._program_write)
-            if self._program_write & 0b10 == 0:
-                self.program_mem[i] = val # type: ignore
+        i = (oct2 << 8) | oct1 | (select << 16)
+        with self.bus.updated_state(False, val, i):
+            return # no mechanism to accept bus value
 
-    def simulator_interface(self, *args):
-        print(*args)
+    def simulator_interface(self, *args): pass
 
-    def probe(self):
-        if __debug__:
-            print("Instruction Executed: ", bin(self.inst_executor.inst)[2:].rjust(8, "0"))
-            print("-" * 4)
+    def probe(self): pass
+        # if __debug__:
+        #     print("Instruction Executed: ", bin(self.inst_executor.inst)[2:].rjust(8, "0"))
+        #     print("-" * 4)
+        #     input()
 
-if __name__ == "__main__":
-    from util import LoggingMemory # type: ignore
-    mem = LoggingMemory({idx: i for idx, i in enumerate([
-         0b110_000_10, 0xaf,              #LOAD Immediate x(000) = 0xaf
-         0b110_100_10, 0x80,              # LOAD rl(100) = 0x80
-         0b11_1_000_00,                   # STORE x at whatever location (rh, rl) describes
-         0b10_000_001,                    # swap y(001) and x(000)
-         0b110_000_10, 0x01,              # Load immediate x(000) = 0x01
-         0b0100_0100,                     # x(000) = x(000) + y(001) (btw this == 176)
-         0b0000_0010, 0x03, 0x00,         # JMP +3 bytes
-         0b111_000_10, 0b0000_1010, 0x00, # Random bytes
-         0b00001111                       # Halt
-    ])})
-    print(mem)
-    cpu = TeenyCPU(mem)
-    cpu.inst_executor.execute()
-    print(mem)
+# if __name__ == "__main__":
+#     from util import LoggingMemory # type: ignore
+#     mem = LoggingMemory({idx: i for idx, i in enumerate([
+#          0b110_000_10, 0xaf,              #LOAD Immediate x(000) = 0xaf
+#          0b110_100_10, 0x80,              # LOAD rl(100) = 0x80
+#          0b11_1_000_00,                   # STORE x at whatever location (rh, rl) describes
+#          0b10_000_001,                    # swap y(001) and x(000)
+#          0b110_000_10, 0x01,              # Load immediate x(000) = 0x01
+#          0b0100_0100,                     # x(000) = x(000) + y(001) (btw this == 176)
+#          0b0000_0010, 0x03, 0x00,         # JMP +3 bytes
+#          0b111_000_10, 0b0000_1010, 0x00, # Random bytes
+#          0b00001111                       # Halt
+#     ])})
+#     print(mem)
+#     cpu = TeenyCPU(mem)
+#     cpu.inst_executor.execute()
+#     print(mem)

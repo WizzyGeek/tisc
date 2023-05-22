@@ -12,6 +12,7 @@ from .insts import ALU, JMP, MOVX, IO
 toks = {
     "LABEL":     (r"(\w+): *", 2), # 3rd
 
+    "BYTES":     (r"\.bytes 0x((?:[a-f\d]{2} ?)+)(?![a-f\d])", 2),
     "HLT":       (r"hlt", 1),
     "NOP":       (r"nop", 1),
     "JMPS":      (r"(j(?:mp|z|c)) +(0(?:o[0-7]+|b[01]+|x[a-f\d]+)|\d+|\w+)", 3), # 3rd
@@ -74,6 +75,10 @@ def parse_int(s: str): # Intended ValueError
         return int(s[2:], base=bases[s[1]])
     return int(s)
 
+def parse_bytes(s: str):
+    s = "".join(s.split(" "))
+    return bytes(int(s[i:i+2], base=16) for i in range(0, len(s), 2))
+
 # Even though ValueError is allowed to rise it wont actually occur
 
 
@@ -128,5 +133,7 @@ def generate_tokens(src: str):
             yield b"\x0f"
         elif lg == "NOP":
             yield b"\x00"
+        elif lg == "BYTES":
+            yield parse_bytes(m.group(shift + 1))
         elif lg == "INVALID":
             raise ValueError(m.group(lg), lineno, m.start(lg) - line_start)

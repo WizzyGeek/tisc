@@ -1,0 +1,52 @@
+jmp code   # 3 bytes, so first bytes of string is at 3
+
+#        3  4  5  6  7  8  9  0  1  2  3  4  5  6
+.bytes 0x04 0a 21 64 6c 72 6f 57 20 6f 6c 6c 65 48
+# Storing a string :D
+# 0x04 is ETX signals flush to console writer
+
+code:    # code label
+
+loadi rh, 0x00  # address to byte 0x0010
+loadi rl, 0x10
+# [rh,rl] now stores 0x0010 which is where the first byte of the string is
+# the second bytes is a 0x0f
+# so on and so forth till 0x03 (last byte ETX)
+
+loadi w, 0xff   # magic constant
+
+
+entry:        # Do while loop entry location
+copy z, w     # z = w
+
+rloadrl x     # write one byte
+movx rh, w    # swap both rh, w
+movx rl, z
+# The above two lines achived
+# [rh,rl] = 0xffff
+# 0xffff is the memory address of the Serial Console writer
+
+storerl x     # writes to device at 0xffff (rh,rl pair was the pointer)
+
+movx rh, w
+movx rl, z
+# Swap again to get back the pointer to bytes
+
+movx rl, x    # swap both, rl, x
+
+loadi z, 1    # z = 1
+sub x, z      # x = x - z
+# Decrement x
+
+copy z, x     # z = x # store for checking loop exit condition
+movx rl, x    # swap both, rl has been decremented, we are done with rl
+
+loadi x, 2    # x = 2
+sub z, x      # z = z - x
+
+jz exit       # jump to exit if z == 0, aka is x == 2 aka is rl == 0x02
+# which would mean we already iterated over all out characters
+jmp entry     # if not then jump to back to entry
+exit:
+
+hlt; # halts the simulation/emulation whatever
