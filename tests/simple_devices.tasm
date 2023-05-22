@@ -1,4 +1,4 @@
-jmp code   # 3 bytes, so first bytes of string is at 3
+jmp code   # 3 bytes, so last byte of string is at 3
 
 #        3  4  5  6  7  8  9  0  1  2  3  4  5  6
 .bytes 0x04 0a 21 64 6c 72 6f 57 20 6f 6c 6c 65 48
@@ -19,14 +19,14 @@ loadi w, 0xff   # magic constant
 entry:        # Do while loop entry location
 copy z, w     # z = w
 
-rloadrl x     # write one byte
+rloadrl x     # read one byte from string
 movx rh, w    # swap both rh, w
 movx rl, z
 # The above two lines achived
 # [rh,rl] = 0xffff
 # 0xffff is the memory address of the Serial Console writer
 
-storerl x     # writes to device at 0xffff (rh,rl pair was the pointer)
+storerl x     # writes character to device at 0xffff (rh,rl pair was the pointer)
 
 movx rh, w
 movx rl, z
